@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BenDan.IRepository\BenDan.IRepository.csproj" />
+    <ProjectReference Include="..\BenDan.IServices\BenDan.IServices.csproj" />
+    <ProjectReference Include="..\BenDan.Repository\BenDan.Repository.csproj" />
+  </ItemGroup>
+
+</Project>
