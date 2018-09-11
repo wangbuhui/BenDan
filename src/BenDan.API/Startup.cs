@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using Autofac.Extras.DynamicProxy;
-using BenDan.API.AOP;
 using BenDan.API.AuthHelper;
 using BenDan.Repository.sugar;
 using Microsoft.AspNetCore.Builder;
@@ -35,7 +34,36 @@ namespace BenDan.API
         public IServiceProvider ConfigureServices(IServiceCollection services)
         {
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
+    
             var basePath = AppContext.BaseDirectory;
+
+            #region CORS
+            services.AddCors(c =>
+            {
+                //↓↓↓↓↓↓↓注意正式环境不要使用这种全开放的处理↓↓↓↓↓↓↓↓↓↓
+                c.AddPolicy("AllRequests", policy =>
+                {
+                    policy
+                    .AllowAnyOrigin()//允许任何源
+                    .AllowAnyMethod()//允许任何方式
+                    .AllowAnyHeader()//允许任何头
+                    .AllowCredentials();//允许cookie
+                });
+                //↑↑↑↑↑↑↑注意正式环境不要使用这种全开放的处理↑↑↑↑↑↑↑↑↑↑
+
+
+                //一般采用这种方法
+                c.AddPolicy("LimitRequests", policy =>
+                {
+                    policy
+                    .WithOrigins("http://localhost:8020", "http://blog.core.xxx.com", "")//支持多个域名端口
+                    .WithMethods("GET", "POST", "PUT", "DELETE")//请求方法添加到策略
+                    .WithHeaders("authorization");//标头添加到策略
+                });
+
+            });
+            #endregion
+
             #region swaggerui
             services.AddSwaggerGen(c =>
             {
@@ -104,19 +132,12 @@ namespace BenDan.API
             var builder = new ContainerBuilder();
             //注册要通过反射创建的组件
             //builder.RegisterType<AdvertisementServices>().As<IAdvertisementServices>();
-            builder.RegisterType<CacheAOP>();//可以直接替换其他拦截器
 
 
             var servicesDllFile = Path.Combine(basePath, "BenDan.Services.dll");//获取项目绝对路径
             var assemblysServices = Assembly.LoadFile(servicesDllFile);//直接采用加载文件的方法
 
             //builder.RegisterAssemblyTypes(assemblysServices).AsImplementedInterfaces();//指定已扫描程序集中的类型注册为提供所有其实现的接口。
-
-            builder.RegisterAssemblyTypes(assemblysServices)
-                      .AsImplementedInterfaces()
-                      .InstancePerLifetimeScope()
-                      .EnableInterfaceInterceptors()//引用Autofac.Extras.DynamicProxy;
-                      .InterceptedBy(typeof(CacheAOP));//允许将拦截器服务的列表分配给注册。可以直接替换其他拦截器
 
             var repositoryDllFile = Path.Combine(basePath, "BenDan.Repository.dll");
             var assemblysRepository = Assembly.LoadFile(repositoryDllFile);
